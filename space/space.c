@@ -7,13 +7,16 @@
 
 
 void updateWithoutInput(int[][WIDTH],Plane[]);
-void updateWithInput(Plane*,int[][WIDTH]);
+void updateWithInput(Plane*,Bullet*,int[][WIDTH]);
+void crash(Plane[],Plane*,int[][WIDTH]);
 
+/*
+*初始化玩家、子弹和界面
+**/
 
-
-void startUp(Plane *p,Plane e[],int can[][WIDTH])
+void startUp(Plane *p,Bullet *b,Plane e[],int can[][WIDTH])
 {
-  int ballet_x,ballet_y;
+  //  int ballet_x,ballet_y;
 
   /*飞机位置*/
   p-> x = HIGH -1;
@@ -21,9 +24,9 @@ void startUp(Plane *p,Plane e[],int can[][WIDTH])
   can[p->x][p->y] = ONE;
 
   /*子弹坐标*/
-  ballet_x = p->x -1;
-   ballet_y = p-> y ;
-  can[ballet_x][ballet_y] = TWO;
+  b->x = p->x -1;
+  b->y = p-> y ;
+  can[b->x][b->y] = TWO;
 
   /*敌机坐标*/
   for(int i=0;i<5;i++)
@@ -34,14 +37,18 @@ void startUp(Plane *p,Plane e[],int can[][WIDTH])
     }
 }
 
+
+/*
+ *在控制台上显示
+**/
 void show(int can[][WIDTH])
 {
 
   int i,j;
   system("clear");
-  for(i=0;i<WIDTH;i++)
+  for(i=0;i<HIGH;i++)
     {
-      for(j=0;j<HIGH;j++)
+      for(j=0;j<WIDTH;j++)
         {
           switch(can[i][j])
             {
@@ -53,37 +60,40 @@ void show(int can[][WIDTH])
         }
       printf("\n");
     }
-  Sleep(40);
+  Sleep(60);
 }
 
 
 
 int main(void) {
-  static int canvas[HIGH][WIDTH];
+  static  int canvas[HIGH][WIDTH];
   
+  Bullet *bullet = malloc(sizeof(Bullet));
 
   Plane *player = malloc(sizeof(Plane)), enemy[5];
   int con = 1;
 
-  startUp(player,enemy,canvas);
+  startUp(player,bullet,enemy,canvas);
   
   while(con)
     {
        show(canvas);
        updateWithoutInput(canvas,enemy);
-       updateWithInput(player,canvas);
-  }
+       updateWithInput(player,bullet,canvas);
+       crash(enemy,player,canvas);
+    }
 
   return 0;
 }
 
 
 /*与控制有关的更新*/
-void updateWithInput(Plane *p,int can[][WIDTH])
+void updateWithInput(Plane *p,Bullet *b,int can[][WIDTH])
 {
   char input;
-  int k;
+  
 
+  
   /*
    *通过键盘来操控飞机和子弹的运动方向
    */
@@ -96,24 +106,37 @@ void updateWithInput(Plane *p,int can[][WIDTH])
           can[p->x][p->y] =0;
           --(p->y);
           can[p->x][p->y] = 1;
+
+          /*子弹随飞机的移动而移动*/
+          --(b->y);
+          can[b->x][b->y] = 2;
+
         }
       if(input=='j' && p->x <WIDTH)
         {
           can[p->x][p->y] = 0;
           ++(p->y);
           can[p->x][p->y] = 1;
+
+          ++(b->y);
+          can[b->x][b->y] = 2;
         }
       if(input=='w')
         {
           can[p->x][p->y] =0;
           --(p->x);
           can[p->x][p->y] = 1;
+          --(b->x);
+          can[b->x][b->y] =2;
         }
       if(input=='b')
         {
           can[p->x][p->y] =0;
           ++(p->x);
           can[p->x][p->y] = 1;
+
+          ++(b->x);
+          can[b->x][b->y] =2;
         }
     }
 
@@ -135,15 +158,19 @@ void updateWithoutInput(int can[][WIDTH],Plane enemy[])
             {
               for(k=0;k<5;k++)
                 {
+
+                  /*子弹击中敌机*/
                   if(i==enemy[k].x && j==enemy[k].y)
                     {
                       can[enemy[k].x][enemy[k].y] = 0;
                       enemy[k].x = rand() % 2;
                       enemy[k].y = rand() % WIDTH;
                       can[enemy[k].x][enemy[k].y] =THREE;
-                      can[i][j] = ZERO;
+                      /*子弹消失*/
+                      can[i][j]= ZERO;
                     }
                 }
+              /*子弹向上移动*/
               can[i][j] = 0;
               if(i > 0)
                 can[i-1][j] = TWO;
@@ -151,5 +178,27 @@ void updateWithoutInput(int can[][WIDTH],Plane enemy[])
             }
         }
     }
+
 }
 
+
+
+void crash(Plane enemy[],Plane *p,int can[][WIDTH])
+{
+  int k;
+  static int speed = 0;
+  if(speed < 5)
+    speed++;
+
+  if(speed == 5)
+    {
+
+      for(k=0;k<5;k++)
+        {
+      can[enemy[k].x][enemy[k].y] = 0;
+      enemy[k].x++;
+      speed = 0;
+      can[enemy[k].x][enemy[k].y] = 3;
+        }
+    }
+}
